@@ -1,0 +1,116 @@
+// loadgen.go
+
+//Most code demonstrated by Bernstein,Morris in class
+//Command line flag parsing added by Richart, Joel
+
+package main
+
+import (
+	"flag"
+	"fmt"
+	"../counter"
+	"net/http"
+	"time"
+)
+
+var (
+
+	// average number of requests ( per second)
+	rate = 200
+
+	// concurrent requests that are issued
+	burst = 20
+
+	// The max time to wait for a response
+	timeoutMAX = 1000
+
+	// number of seconds to process
+	runtime = 10
+
+	// Target URL to generate load
+	url = "http://localhost:8080/time"
+
+	// counter
+	c = counter.New()
+
+	//converter
+	convert = map[int]string{
+		1: "100s",
+		2: "200s",
+		3: "300s",
+		4: "400s",
+		5: "500s",
+	}
+)
+
+func request() {
+	// every time a request is made, increment "total"
+	c.Incr("total", 1)
+
+	// set timeOut duration (in milliseconds)
+	client := http.Client{
+		Timeout: (time.Duration(timeoutMAX) * time.Millisecond),
+	}
+
+	// if response comes back as an error, increment "errors"
+	response, err := client.Get(url)
+	if err != nil {
+		c.Incr("errors", 1)
+		return
+	}
+
+	// all non-errors will be grouped by the type of status code
+	key, ok := convert[response.StatusCode/100]
+	if !ok {
+		key = "errors"
+	}
+
+	c.Incr(key, 1)
+
+}
+
+func load() {
+
+	// convert int burst into time.Duration
+	interval := time.Duration((1000000*burst)/rate) * time.Microsecond
+	period := time.Tick(interval)
+
+	// load up server like crazy!
+	for {
+		// fire off burst
+		for i := 0; i < burst; i++ {
+			go request()
+		}
+		// wait for next tick
+		<-period
+	}
+}
+
+func main() {
+
+	// parse command line arguments
+	flag.IntVar(&rate, "rate", 200, "Set average rate of requests ")
+	flag.IntVar(&burst, "burst", 20, "Set number of concurrent requests to issue")
+	flag.IntVar(&timeoutMAX, "timeout-ms", 1000, "Set  max time to wait for response")
+	flag.IntVar(&runtime, "runtime", 10, "Set number of seconds to process")
+	flag.StringVar(&url, "url", "http://localhost:8080/time", "set URL to Sample")
+
+	flag.Parse()
+
+	// call load function
+	go load()
+
+	// sleep for 'runtime' Seconds before collecting the stats
+	sleepTime := time.Duration(runtime + 1) * time.Second
+	time.Sleep(sleepTime) // sleep 10 seconds
+
+	// output
+	fmt.Printf("Total: \t%d\n", c.Get("total"))
+	fmt.Printf("100s: \t%d\n", c.Get("100s"))
+	fmt.Printf("200s: \t%d\n", c.Get("200s"))
+	fmt.Printf("300s: \t%d\n", c.Get("300s"))
+	fmt.Printf("400s: \t%d\n", c.Get("400s"))
+	fmt.Printf("500s: \t%d\n", c.Get("500s"))
+	fmt.Printf("Errors: \t%d\n", c.Get("errors"))
+
+}

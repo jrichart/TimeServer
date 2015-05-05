@@ -1,0 +1,34 @@
+Run #1
+--max-inflight=80 --avg-response-ms=500   --response-deviation-ms=300
+--runtime=10 --rate=200 --burst=20 --timeout-ms=1000
+Total : 2200
+100s:   0
+200s:   2001
+300s:   0
+400s:   0
+500s:   0
+Errors: 	102
+
+
+Run #2
+--max-inflight=80 --avg-response-ms=500   --response-deviation-ms=300
+--runtime=1 --rate=200 --burst=20 --timeout-ms=1000
+Total : 400
+100s:   0
+200s:   289
+300s:   0
+400s:   0
+500s:   
+Errors: 	14
+
+
+Run #3
+--max-inflight=80 --avg-response-ms=500   --response-deviation-ms=300
+--runtime=6 --rate=200 --burst=15 --timeout-ms=300
+Total : 1410
+100s:   0
+200s:   313
+300s:   0
+400s:   0
+500s:   0
+Errors: 	1039
